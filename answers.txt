@@ -147,6 +147,67 @@ Why: UNION merges product query with users table
 
 
 
+Task 4 - Secure Queries
+
+Code (secure.py):
+import sqlite3
+conn = sqlite3.connect('nyondo_stock.db')
+
+# TODO: rewrite using ? placeholder - never use f-strings in SQL
+def search_product_safe(name):
+# your code here
+pass
+
+def login_safe(username, password):
+# your code here
+pass
+
+# These must ALL return [] or None when you run them
+print('Test 1:', search_product_safe("' OR 1=1--"))
+print('Test 2:', search_product_safe("' UNION SELECT id,username,password,role FROM
+users--"))
+print('Test 3:', login_safe("admin'--", 'anything'))
+print('Test 4:', login_safe("' OR '1'='1", "' OR '1'='1"))
+--------------------------------
+
+
+[full secure.py code here]
+import sqlite3
+
+conn = sqlite3.connect('nyondo_stock.db')
+
+def search_product_safe(name):
+    # Use parameterized query
+    query = "SELECT * FROM products WHERE name LIKE ?"
+    rows = conn.execute(query, (f"%{name}%",)).fetchall()
+    return rows
+
+def login_safe(username, password):
+    # Use parameterized query
+    query = "SELECT * FROM users WHERE username=? AND password=?"
+    row = conn.execute(query, (username, password)).fetchone()
+    return row
+
+# --- Tests (all should return [] or None) ---
+print("Test 1:", search_product_safe("' OR 1=1 -- "))
+print("Test 2:", search_product_safe("' UNION SELECT id, username, password, role FROM users -- "))
+print("Test 3:", login_safe("admin' -- ", "anything"))
+print("Test 4:", login_safe("' OR '1'='1", "' OR '1'='1"))
+
+--------------------------------
+
+Test Results:
+Test 1: []
+Test 2: []
+Test 3: None
+Test 4: None
+
+Explanation:
+Using ? placeholders prevents SQL injection because user input is treated as data, not code. 
+With f-strings, the input is directly inserted into the SQL string, so malicious input changes the query itself. 
+With parameterized queries, the database engine separates the query structure from the values, ensuring that even if input contains SQL keywords, they are not executed as commands.
+
+
 
 
 
