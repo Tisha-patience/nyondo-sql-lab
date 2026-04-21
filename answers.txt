@@ -208,6 +208,23 @@ With f-strings, the input is directly inserted into the SQL string, so malicious
 With parameterized queries, the database engine separates the query structure from the values, ensuring that even if input contains SQL keywords, they are not executed as commands.
 
 
+Task 5 - Input Validation
+
+Updated secure.py with validation rules:
+- name: string, ≥2 chars, no < > ;
+- price: positive number
+- username: string, no spaces, not empty
+- password: string, ≥6 chars
+
+Test Results:
+Test 1: search_product_safe('cement') -> works normally
+Test 2: search_product_safe('') -> rejected
+Test 3: search_product_safe('<script>') -> rejected
+Test 4: login_safe('admin','admin123') -> works
+Test 5: login_safe('admin','ab') -> rejected (too short)
+Test 6: login_safe('ad min','pass123') -> rejected (space in username)
+
+
 
 
 
